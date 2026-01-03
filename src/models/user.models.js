@@ -30,12 +30,8 @@ const userSchema = new Schema(
       maxlength: 64,
     },
     avatar: {
-      type: {
-        url: String,
-      },
-      default: {
-        url: DEFAULT_AVATAR_URL,
-      },
+      type: String,
+      default: DEFAULT_AVATAR_URL,
     },
 
     followers: [
@@ -57,7 +53,7 @@ const userSchema = new Schema(
 // Pre-save hook to hash password
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
-    return next();
+    return; // there is no need to call next() manually as we are using async function
   }
 
   // Hash the password before saving
