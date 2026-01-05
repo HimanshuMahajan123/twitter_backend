@@ -2,6 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { DEFAULT_AVATAR_URL } from "../constants/avatar.js";
+import crypto from "crypto";
 
 const userSchema = new Schema(
   {
@@ -46,6 +47,31 @@ const userSchema = new Schema(
         ref: "User",
       },
     ],
+
+    refreshToken: {
+      type: String,
+    },
+
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    emailVerificationToken: {
+      type: String,
+    },
+
+    emailVerificationTokenExpiry: {
+      type: Date,
+    },
+
+    forgotPasswordToken: {
+      type: String,
+    },
+
+    forgotPasswordTokenExpiry: {
+      type: Date,
+    },
   },
   { timestamps: true },
 );
@@ -87,6 +113,20 @@ userSchema.methods.generateRefrehshToken = function () {
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: process.env.REFRESH_TOKEN_EXPIRY },
   );
+};
+
+//method to generate temporary token
+userSchema.methods.generateTemporaryToken = function () {
+  const unhashedToken = crypto.randomBytes(20).toString("hex");
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(unhashedToken)
+    .digest("hex");
+
+  const tokenExpiry = Date.now() + 10 * 60 * 1000; //token expires after 10 minutes of its generation
+
+  return { unhashedToken, hashedToken, tokenExpiry };
 };
 
 export const User = mongoose.model("User", userSchema);
