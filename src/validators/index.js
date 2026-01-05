@@ -34,4 +34,14 @@ const registerValidator = () => {
   ];
 };
 
-export { registerValidator };
+const forgotPasswordValidator = () => {
+  return [
+    body("email")
+      .notEmpty()
+      .withMessage("Email is required.")
+      .isEmail()
+      .withMessage("Please provide a valid email address."),
+  ];
+};
+
+export { registerValidator, forgotPasswordValidator };
