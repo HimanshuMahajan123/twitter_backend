@@ -115,7 +115,7 @@ userSchema.methods.generateRefrehshToken = function () {
   );
 };
 
-//method to generate temporary token
+//mongoose method to generate temporary tokens(for email verification , password reset etc) using crypto(a nodejs built-in module)
 userSchema.methods.generateTemporaryToken = function () {
   const unhashedToken = crypto.randomBytes(20).toString("hex");
 
