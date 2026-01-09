@@ -4,6 +4,7 @@ import {
   forgotPasswordRequest,
   resetPassword,
   loginUser,
+  logoutUser,
 } from "../controllers/auth.controllers.js";
 import { Router } from "express";
 import upload from "../middlewares/multer.middlewares.js";
@@ -13,6 +14,8 @@ import {
   loginValidator,
 } from "../validators/index.js";
 import { validate } from "../middlewares/validator.middleware.js";
+import { verifyjwt } from "../middlewares/auth.middlewares.js";
+
 const router = Router();
 
 router.post(
@@ -22,6 +25,7 @@ router.post(
   validate,
   registerUser,
   loginUser,
+  logoutUser,
 );
 
 router.get("/verify-email/:verificationToken", verifyEmail);
@@ -36,4 +40,6 @@ router.post(
 router.post("/login", loginValidator(), validate, loginUser);
 
 router.post("/reset-password/:resetToken", resetPassword);
+
+router.post("/logout", verifyjwt, logoutUser);
 export default router;

@@ -9,6 +9,7 @@ import {
   emailVerificationMailgenContent,
   forgotPasswordMailgenContent,
 } from "../utils/mail.js";
+import { truncate } from "fs";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -240,4 +241,27 @@ export const loginUser = asyncHandler(async (req, res) => {
 });
 
 // Controller for user logout
-export const logoutUser = asyncHandler(async (req, res) => {});
+export const logoutUser = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: "",
+      },
+    },
+    {
+      new: true, //Return the UPDATED user, not the old one
+    },
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User has been successfully logged out"));
+});
