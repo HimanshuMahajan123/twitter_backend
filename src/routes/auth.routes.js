@@ -5,6 +5,7 @@ import {
   resetPassword,
   loginUser,
   logoutUser,
+  refreshAccessToken,
 } from "../controllers/auth.controllers.js";
 import { Router } from "express";
 import upload from "../middlewares/multer.middlewares.js";
@@ -26,6 +27,7 @@ router.post(
   registerUser,
   loginUser,
   logoutUser,
+  refreshAccessToken,
 );
 
 router.get("/verify-email/:verificationToken", verifyEmail);
@@ -42,4 +44,5 @@ router.post("/login", loginValidator(), validate, loginUser);
 router.post("/reset-password/:resetToken", resetPassword);
 
 router.post("/logout", verifyjwt, logoutUser);
+router.post("/refresh-access-token", verifyjwt, refreshAccessToken);
 export default router;
