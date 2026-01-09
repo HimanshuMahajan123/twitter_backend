@@ -44,4 +44,21 @@ const forgotPasswordValidator = () => {
   ];
 };
 
-export { registerValidator, forgotPasswordValidator };
+const loginValidator = () => {
+  return [
+    body("email")
+      .notEmpty()
+      .withMessage("Email is required.")
+      .isEmail()
+      .withMessage("Please provide a valid email address.")
+      .trim(),
+
+    body("password")
+      .notEmpty()
+      .withMessage("Password is required.")
+      .isLength({ min: 8, max: 64 })
+      .withMessage("Password must be between 8 and 64 characters."),
+  ];
+};
+
+export { registerValidator, forgotPasswordValidator, loginValidator };
