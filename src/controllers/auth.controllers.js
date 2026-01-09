@@ -10,6 +10,21 @@ import {
   forgotPasswordMailgenContent,
 } from "../utils/mail.js";
 
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefrehshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+    return { accessToken, refreshToken };
+  } catch (error) {
+    console.error("Couldn't generate jwt tokens!", error);
+    throw new ApiError(500, "Error generating Access and Refresh Tokens");
+  }
+};
+
 // Controller for user registration
 export const registerUser = asyncHandler(async (req, res) => {
   const { name, username, email, password } = req.body;
@@ -180,7 +195,49 @@ export const resetPassword = asyncHandler(async (req, res) => {
 });
 
 //constroller for user login
-export const loginUser = asyncHandler(async (req, res) => {});
+export const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    throw new ApiError(400, "Both fields are necessary");
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const isPasswordCorrect = await user.isPasswordCorrect(password);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(401, "Invalid Email or Password");
+  }
+
+  if (!user.isEmailVerified) {
+    throw new ApiError(403, "to proceed , verify your email first!");
+  }
+
+  const { refreshToken, accessToken } = await generateAccessAndRefreshTokens(
+    user._id,
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  res
+    .status(200)
+    .cookie("refreshToken", refreshToken, options)
+    .cookie("accessToken", accessToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        { accessToken, refreshToken },
+        "User logged in successfully",
+      ),
+    );
+});
 
 // Controller for user logout
 export const logoutUser = asyncHandler(async (req, res) => {});
