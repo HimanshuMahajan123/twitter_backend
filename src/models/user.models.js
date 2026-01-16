@@ -35,19 +35,6 @@ const userSchema = new Schema(
       default: DEFAULT_AVATAR_URL,
     },
 
-    followers: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    following: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-
     refreshToken: {
       type: String,
     },
