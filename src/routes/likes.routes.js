@@ -9,9 +9,9 @@ import { verifyjwt } from "../middlewares/auth.middlewares.js";
 
 const router = Router();
 
-router.post("/like/:postId", verifyjwt, addLike);
-router.delete("/like/:postId", verifyjwt, removeLike);
-router.get("/likes/:postId", verifyjwt, getPostLikes);
-router.get("/like/status/:postId", verifyjwt, isPostLiked);
+router.post("/add/:postId", verifyjwt, addLike);
+router.delete("/delete/:postId", verifyjwt, removeLike);
+router.get("/list/:postId", verifyjwt, getPostLikes);
+router.get("/status/:postId", verifyjwt, isPostLiked);
 
 export default router;
