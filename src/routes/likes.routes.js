@@ -4,7 +4,7 @@ import {
   removeLike,
   getPostLikes,
   isPostLiked,
-} from "../controllers/like.controller.js";
+} from "../controllers/likes.controllers.js";
 import { verifyjwt } from "../middlewares/auth.middlewares.js";
 
 const router = Router();

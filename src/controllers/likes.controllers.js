@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { Like } from "../models/like.models.js";
-import { Post } from "../models/post.models.js";
+import { Like } from "../models/likes.model.js";
+import { Post } from "../models/posts.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/api-error.js";
 import { ApiResponse } from "../utils/api-response.js";

@@ -4,7 +4,7 @@ import {
   removeFollow,
   getFollowers,
   getFollowing
-} from "../controllers/follow.controller.js";
+} from "../controllers/follow.controllers.js";
 import { verifyjwt } from "../middlewares/auth.middlewares.js"; 
 import { validateObjectId } from "../validators/index.js";
 
