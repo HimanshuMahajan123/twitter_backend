@@ -25,9 +25,6 @@ router.post(
   registerValidator(),
   validate,
   registerUser,
-  loginUser,
-  logoutUser,
-  refreshAccessToken,
 );
 
 router.get("/verify-email/:verificationToken", verifyEmail);
