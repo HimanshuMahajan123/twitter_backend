@@ -1,4 +1,6 @@
 import { body } from "express-validator";
+import mongoose from "mongoose";
+
 
 const registerValidator = () => {
   return [
@@ -61,4 +63,11 @@ const loginValidator = () => {
   ];
 };
 
-export { registerValidator, forgotPasswordValidator, loginValidator };
+
+ const validateObjectId = (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+    return res.status(400).json({ message: "Invalid userId" });
+  }
+  next();
+};
+export { registerValidator, forgotPasswordValidator, loginValidator, validateObjectId };

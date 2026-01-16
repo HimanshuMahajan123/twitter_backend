@@ -1,17 +1,26 @@
 import mongoose, { Schema } from "mongoose";
-import { User } from "./user.models";
 
-const likesSchema = new Schema({
-  userId: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+const LikeSchema = new Schema(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    postId: {
+      type: Schema.Types.ObjectId,
+      ref: "Post",
+      required: true,
+    },
   },
-  postId: {
-    type: Schema.Types.ObjectId,
-    ref: "Post",
-    required: true,
-  },
-});
+  {
+    timestamps: true,
+  }
+);
 
-export const Likes = mongoose.model("Likes", likesSchema);
+LikeSchema.index(
+  { userId: 1, postId: 1 },
+  { unique: true }
+);
+
+export const Like = mongoose.model("Like", LikeSchema);
