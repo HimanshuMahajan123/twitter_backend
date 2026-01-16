@@ -15,7 +15,7 @@ export const uploadToCloudinary = async (localFilePath) => {
   console.log("uploading on cloudinary >> ", localFilePath);
   const result = await cloudinary.uploader.upload(localFilePath, {
     folder: "Twitter",
-    resource_type: "image",
+    resource_type: "auto",
   });
 
   // Remove file from local uploads folder
