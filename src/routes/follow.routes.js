@@ -11,7 +11,12 @@ import { validateObjectId } from "../validators/index.js";
 const router = Router();
 
 router.post("/addFollow/:userId", verifyjwt, validateObjectId, addFollow);
-router.delete("/follow/:userId", verifyjwt, validateObjectId, removeFollow);
+router.delete(
+  "/deleteFollow/:userId",
+  verifyjwt,
+  validateObjectId,
+  removeFollow,
+);
 router.get("/getFollowers/:userId", verifyjwt, validateObjectId, getFollowers);
 router.get("/getFollowing/:userId", verifyjwt, validateObjectId, getFollowing);
 
