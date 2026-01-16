@@ -41,13 +41,15 @@ const PostSchema = new Schema(
 
 PostSchema.index({ creator: 1, createdAt: -1 });
 
-//mongoose hook avoid empty posts (eg : {creator : user123} , there is no text/image/video)
-PostSchema.pre("validate", function (next) {
-  const { text, imageUrl, videoUrl, linkUrl } = this.content || {};
-  if (!text && !imageUrl && !videoUrl && !linkUrl) {
-    return next(new Error("Post must contain some content"));
+//mongoose hook to avoid empty posts (eg : {creator : user123} , there is no text/image/video)
+PostSchema.pre("validate", function () {
+  const { text, imageUrls = [], videoUrl, linkUrl } = this.content || {};
+
+  const hasContent = text || imageUrls.length > 0 || videoUrl || linkUrl;
+
+  if (!hasContent) {
+    throw new Error("Post must contain some content");
   }
-  next();
 });
 
 const Post = model("Post", PostSchema);
