@@ -2,10 +2,12 @@ import { Schema, model } from "mongoose";
 
 const PostSchema = new Schema(
   {
-
     content: {
       text: { type: String },
-      imageUrl: { type: String },
+      imageUrl: {
+        type: [String],
+        default: [],
+      },
       videoUrl: { type: String },
       linkUrl: { type: String },
     },
@@ -34,12 +36,19 @@ const PostSchema = new Schema(
   },
   {
     timestamps: true, // ✅ adds createdAt & updatedAt
-  }
+  },
 );
 
 PostSchema.index({ creator: 1, createdAt: -1 });
 
-
+//mongoose hook avoid empty posts (eg : {creator : user123} , there is no text/image/video)
+PostSchema.pre("validate", function (next) {
+  const { text, imageUrl, videoUrl, linkUrl } = this.content || {};
+  if (!text && !imageUrl && !videoUrl && !linkUrl) {
+    return next(new Error("Post must contain some content"));
+  }
+  next();
+});
 
 const Post = model("Post", PostSchema);
 
