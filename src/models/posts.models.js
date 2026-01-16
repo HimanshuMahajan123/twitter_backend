@@ -44,24 +44,7 @@ const PostSchema = new Schema(
 );
 
 PostSchema.index({ creator: 1, createdAt: -1 });
-PostSchema.pre("save", function (next) {
-  const { type, content } = this;
 
-  if (type === "text" && !content.text) {
-    return next(new Error("Text post must have text"));
-  }
-  if (type === "image" && !content.imageUrl) {
-    return next(new Error("Image post must have imageUrl"));
-  }
-  if (type === "video" && !content.videoUrl) {
-    return next(new Error("Video post must have videoUrl"));
-  }
-  if (type === "link" && !content.linkUrl) {
-    return next(new Error("Link post must have linkUrl"));
-  }
-
-  next();
-});
 
 
 const Post = model("Post", PostSchema);
