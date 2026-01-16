@@ -215,7 +215,21 @@ export const loginUser = asyncHandler(async (req, res) => {
   }
 
   if (!user.isEmailVerified) {
-    throw new ApiError(403, "to proceed , verify your email first!");
+    console.error("to proceed , verify your email first!");
+    const { hashedToken, unhashedToken, tokenExpiry } =
+      user.generateTemporaryToken();
+
+    user.emailVerificationToken = hashedToken;
+    user.emailVerificationTokenExpiry = tokenExpiry;
+    await user.save({ validateBeforeSave: false });
+    await sendEmail({
+      email: user?.email,
+      subject: "verify your email address",
+      mailgenContent: emailVerificationMailgenContent(
+        user?.username,
+        `${req.protocol}://${req.get("host")}/api/v1/auth/verify-email/${unhashedToken}`,
+      ),
+    });
   }
 
   const { refreshToken, accessToken } = await generateAccessAndRefreshTokens(
