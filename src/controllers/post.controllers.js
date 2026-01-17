@@ -4,6 +4,7 @@ import { ApiError } from "../utils/api-error.js";
 import { ApiResponse } from "../utils/api-response.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { Follow } from "../models/follow.models.js";
+import { Repost } from "../models/repost.models.js";
 import fs from "fs";
 
 const UploadPost = asyncHandler(async (req, res) => {
@@ -162,4 +163,53 @@ const trendingPosts = asyncHandler(async (req, res) => {
   );
 });
 
-export { UploadPost, getFeedPosts, trendingPosts };
+const repostPost = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { postId } = req.params;
+  const { text } = req.body;
+
+  if (!postId) {
+    throw new ApiError(400, "Post ID is required");
+  }
+
+  const postExists = await Post.exists({ _id: postId });
+  if (!postExists) {
+    throw new ApiError(404, "Post not found");
+  }
+
+  const existingRepost = await Repost.findOne({ userId, postId });
+
+  // Undo repost
+  if (existingRepost) {
+    throw new ApiError(409, "A post can not be reposted twice");
+  }
+
+  //Create repost
+  const repost = await Repost.create({
+    userId,
+    postId,
+    text: text?.trim() || undefined,
+  });
+
+  const populatedRepost = await Repost.findById(repost._id)
+    .populate("userId", "username avatar")
+    .populate({
+      path: "postId",
+      populate: {
+        path: "creator",
+        select: "username avatar",
+      },
+    });
+
+  res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        { repost: populatedRepost },
+        "Repost added successfully",
+      ),
+    );
+});
+
+export { UploadPost, getFeedPosts, trendingPosts, repostPost };
