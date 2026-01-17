@@ -65,14 +65,14 @@ const UploadPost = asyncHandler(async (req, res) => {
     );
 });
 
-export { UploadPost };
-
 const getFeedPosts = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  const page = parseInt(req.query.page) || 1;
+  //use cursor based pagination for infinite scrolling
+  const cursor = req.query.cursor;
   const limit = parseInt(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
+
+  const query = cursor ? { createdAt: { $lt: new Date(cursor) } } : {};
 
   const following = await Follow.find({ followerId: userId }).select(
     "followingId -_id",
@@ -82,10 +82,11 @@ const getFeedPosts = asyncHandler(async (req, res) => {
 
   const followingPosts = await Post.find({
     creator: { $in: followingIds },
+    ...query, //...query dynamically injects all filter conditions (like the cursor) into the MongoDB query,
   })
     .sort({ createdAt: -1 })
     .limit(limit)
-    .populate("creator", "username profilePicture");
+    .populate("creator", "username avatar");
 
   let remaining = limit - followingPosts.length;
   let otherPosts = [];
@@ -95,17 +96,25 @@ const getFeedPosts = asyncHandler(async (req, res) => {
       creator: {
         $nin: [...followingIds, userId], // exclude self & following
       },
+      ...query,
     })
       .sort({ createdAt: -1 })
       .limit(remaining)
-      .populate("creator", "username profilePicture");
+      .populate("creator", "username avatar");
   }
 
   const posts = [...followingPosts, ...otherPosts];
 
-  res
-    .status(200)
-    .json(new ApiResponse(200, { posts }, "Feed posts fetched successfully"));
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        posts,
+        nextCursor: posts.length ? posts[posts.length - 1].createdAt : null, // send the cursor to frontend
+      },
+      "Feed posts fetched successfully",
+    ),
+  );
 });
 
-export { getFeedPosts };
+export { UploadPost, getFeedPosts };
