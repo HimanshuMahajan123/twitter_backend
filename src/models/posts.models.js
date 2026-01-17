@@ -43,9 +43,9 @@ PostSchema.index({ creator: 1, createdAt: -1 });
 
 //mongoose hook to avoid empty posts (eg : {creator : user123} , there is no text/image/video)
 PostSchema.pre("validate", function () {
-  const { text, imageUrls = [], videoUrl, linkUrl } = this.content || {};
+  const { text, imageUrl = [], videoUrl = [], linkUrl } = this.content || {};
 
-  const hasContent = text || imageUrls.length > 0 || videoUrl || linkUrl;
+  const hasContent = text || imageUrl.length > 0 || videoUrl || linkUrl;
 
   if (!hasContent) {
     throw new Error("Post must contain some content");
