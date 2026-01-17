@@ -74,7 +74,7 @@ export const getPostLikes = asyncHandler(async (req, res) => {
   const likes = await Like.find({ postId })
     .populate("userId", "username name avatar")
     .sort({ createdAt: -1 });
-
+  console.log(likes);
   res.status(200).json(
     new ApiResponse(
       200,

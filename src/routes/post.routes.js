@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { UploadPost } from "../controllers/post.controllers.js";
+import { UploadPost , getFeedPosts} from "../controllers/post.controllers.js";
 import upload from "../middlewares/multer.middlewares.js";
 import { verifyjwt } from "../middlewares/auth.middlewares.js";
+import { get } from "mongoose";
 
 const router = Router();
 
@@ -10,5 +11,8 @@ const multiUpload = upload.fields([
   { name: "video", maxCount: 1 },
 ]);
 router.post("/upload", verifyjwt, multiUpload, UploadPost);
+
+
+router.get("/feed", verifyjwt, getFeedPosts);
 
 export default router;
