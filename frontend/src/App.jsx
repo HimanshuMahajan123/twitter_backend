@@ -5,7 +5,7 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
-
+import Profile from './pages/Profile';
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
@@ -34,6 +34,7 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
       <Route path="/reset-password/:resetToken" element={<PublicRoute><ResetPassword /></PublicRoute>} />
       <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
+      <Route path="/profile/:userId" element={<PrivateRoute><Profile /></PrivateRoute>} />
     </Routes>
   );
 }

@@ -29,7 +29,7 @@ const Sidebar = ({ user, onLogout }) => {
                 }}
               />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{user.name || user.username}</p>
+                <Link to={`/profile/${user.username}`} className="font-semibold truncate">{user.name || user.username}</Link>
                 <p className="text-sm text-gray-500 truncate">@{user.username}</p>
               </div>
             </div>
