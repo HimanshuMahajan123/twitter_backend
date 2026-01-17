@@ -5,7 +5,7 @@ import authRoutes from "./routes/auth.routes.js";
 import postRoutes from "./routes/post.routes.js";
 import likeRoutes from "./routes/likes.routes.js";
 import followRoutes from "./routes/follow.routes.js";
-
+import userRoutes from "./routes/users.routes.js";
 const app = express();
 
 app.use(express.json());
@@ -23,7 +23,7 @@ app.use(
 );
 
 app.use("/api/v1/auth", authRoutes);
-
+app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/post", postRoutes);
 
 app.use("/api/v1/like", likeRoutes);
