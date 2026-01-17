@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 const Sidebar = ({ user, onLogout }) => {
+  console.log('Sidebar user:', user);
   return (
     <div className="sticky top-4 space-y-4">
       <div className="bg-white rounded-lg p-4 shadow-sm">

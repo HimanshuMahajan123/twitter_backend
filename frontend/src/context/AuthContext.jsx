@@ -24,10 +24,13 @@ export const AuthProvider = ({ children }) => {
     // Note: Login response might not include user data, only tokens
     // User data might need to be fetched separately or decoded from token
     // For now, we'll store basic info from the login attempt
+
+    console.log("res" , response.data) ; 
     const userData = response.data?.user || {
       email,
       username: email.split('@')[0],
       name: email.split('@')[0],
+
     };
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
