@@ -40,6 +40,7 @@ const PostSchema = new Schema(
 );
 
 PostSchema.index({ creator: 1, createdAt: -1 });
+PostSchema.index({ likesCount: -1, createdAt: -1 }); // index added to fetch the trending posts
 
 //mongoose hook to avoid empty posts (eg : {creator : user123} , there is no text/image/video)
 PostSchema.pre("validate", function () {

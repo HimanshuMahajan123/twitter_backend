@@ -117,4 +117,49 @@ const getFeedPosts = asyncHandler(async (req, res) => {
   );
 });
 
-export { UploadPost, getFeedPosts };
+const trendingPosts = asyncHandler(async (req, res) => {
+  const limit = parseInt(req.query.limit) || 10;
+  const cursor = req.query.cursor ? JSON.parse(req.query.cursor) : null;
+
+  // Build cursor query
+  const query = cursor
+    ? {
+        $or: [
+          { likesCount: { $lt: cursor.likesCount } },
+          {
+            likesCount: cursor.likesCount,
+            createdAt: { $lt: new Date(cursor.createdAt) },
+          },
+        ],
+      }
+    : {};
+
+  // Fetch trending posts
+  const posts = await Post.find({ ...query })
+    .sort({ likesCount: -1, createdAt: -1 })
+    .limit(limit)
+    .populate("creator", "username avatar");
+
+  // Prepare nextCursor
+  const nextCursor =
+    posts.length > 0
+      ? JSON.stringify({
+          likesCount: posts[posts.length - 1].likesCount,
+          createdAt: posts[posts.length - 1].createdAt,
+        })
+      : null;
+
+  // Send response
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        trendingPosts: posts,
+        nextCursor,
+      },
+      "Trending Posts fetched successfully",
+    ),
+  );
+});
+
+export { UploadPost, getFeedPosts, trendingPosts };
