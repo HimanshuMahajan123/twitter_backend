@@ -216,20 +216,25 @@ export const loginUser = asyncHandler(async (req, res) => {
 
   if (!user.isEmailVerified) {
     console.error("to proceed , verify your email first!");
-    const { hashedToken, unhashedToken, tokenExpiry } =
-      user.generateTemporaryToken();
 
-    user.emailVerificationToken = hashedToken;
-    user.emailVerificationTokenExpiry = tokenExpiry;
-    await user.save({ validateBeforeSave: false });
-    await sendEmail({
-      email: user?.email,
-      subject: "verify your email address",
-      mailgenContent: emailVerificationMailgenContent(
-        user?.username,
-        `${req.protocol}://${req.get("host")}/api/v1/auth/verify-email/${unhashedToken}`,
-      ),
-    });
+    if (user.emailVerificationTokenExpiry < Date.now()) {
+      const { hashedToken, unhashedToken, tokenExpiry } =
+        user.generateTemporaryToken();
+
+      user.emailVerificationToken = hashedToken;
+      user.emailVerificationTokenExpiry = tokenExpiry;
+      await user.save({ validateBeforeSave: false });
+      await sendEmail({
+        email: user?.email,
+        subject: "verify your email address",
+        mailgenContent: emailVerificationMailgenContent(
+          user?.username,
+          `${req.protocol}://${req.get("host")}/api/v1/auth/verify-email/${unhashedToken}`,
+        ),
+      });
+    }
+
+    throw new ApiError(403, "Verify your account first and try again");
   }
 
   const { refreshToken, accessToken } = await generateAccessAndRefreshTokens(
@@ -248,7 +253,16 @@ export const loginUser = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { accessToken, refreshToken , user:{ email: user.email, username: user.username, name: user.name  , avatar: user.avatar} },
+        {
+          accessToken,
+          refreshToken,
+          user: {
+            email: user.email,
+            username: user.username,
+            name: user.name,
+            avatar: user.avatar,
+          },
+        },
         "User logged in successfully",
       ),
     );
