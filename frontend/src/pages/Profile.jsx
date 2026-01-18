@@ -155,7 +155,7 @@ const UserDashboard = () => {
         </main>
 
         {/* RIGHT SIDEBAR */}
-        <aside className="hidden lg:block col-span-4 bg-white rounded-xl shadow p-6">
+        <aside className="hidden lg:block col-span-4 bg-white rounded-xl shadow p-6 h-fit">
           <div className="flex flex-col items-center text-center">
             <img
               src={user.avatar}
@@ -173,9 +173,7 @@ const UserDashboard = () => {
               </span>
             )}
 
-            <button className="mt-5 w-full bg-[#1DA1F2] text-white py-2 rounded-full font-semibold">
-              Edit Profile
-            </button>
+           
           </div>
         </aside>
 

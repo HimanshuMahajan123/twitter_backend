@@ -4,21 +4,66 @@ import { Post } from "../models/posts.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/api-response.js";
 import { User } from "../models/user.models.js";
-
+import { Follow } from "../models/follow.models.js";
 
 const getUserDashboard = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  const user = await User.findOne({ _id: userId }).select("-password -refreshToken -emailVerificationToken -emailVerificationTokenExpiry -forgotPasswordToken -forgotPasswordTokenExpiry");
+  /* ---------------- USER ---------------- */
+  const user = await User.findById(userId).select(
+    "-password -refreshToken -emailVerificationToken -emailVerificationTokenExpiry -forgotPasswordToken -forgotPasswordTokenExpiry"
+  );
 
   if (!user) {
-    return res.status(404).json(new ApiResponse(404, "User not found"));
+    return res
+      .status(404)
+      .json(new ApiResponse(404, "User not found"));
   }
 
-  const posts = await Post.find({ author: user._id }).sort({ createdAt: -1 });
-  
-  return res.status(200).json(new ApiResponse(200, "User dashboard fetched successfully", { user, posts }));
+  /* ---------------- FOLLOW DATA ---------------- */
+
+  // People who FOLLOW me
+  const followers = await Follow.find({ followingId: userId })
+    .populate("followerId", "username name avatar")
+    .select("followerId -_id");
+
+  // People I am FOLLOWING
+  const following = await Follow.find({ followerId: userId })
+    .populate("followingId", "username name avatar")
+    .select("followingId -_id");
+
+  /* ---------------- COUNTS ---------------- */
+  const followersCount = followers.length;
+  const followingCount = following.length;
+
+  /* ---------------- POSTS ---------------- */
+  const posts = await Post.find({ creator: userId })
+    .populate("creator", "username name avatar")
+    .sort({ createdAt: -1 })
+    .limit(10);
+
+  const postsCount = await Post.countDocuments({ creator: userId });
+
+  /* ---------------- RESPONSE ---------------- */
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      "User dashboard fetched successfully",
+      {
+        user,
+        followers: followers.map(f => f.followerId),
+        following: following.map(f => f.followingId),
+        stats: {
+          followersCount,
+          followingCount,
+          postsCount,
+        },
+        posts,
+      }
+    )
+  );
 });
+
 
 const getFollowers = asyncHandler(async (req, res) => {
   const { userId } = req.params;
