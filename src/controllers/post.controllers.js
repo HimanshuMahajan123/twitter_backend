@@ -68,12 +68,10 @@ const UploadPost = asyncHandler(async (req, res) => {
 
 const getFeedPosts = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-
-  //use cursor based pagination for infinite scrolling
   const cursor = req.query.cursor;
   const limit = parseInt(req.query.limit) || 10;
 
-  const query = cursor ? { createdAt: { $lt: new Date(cursor) } } : {};
+  const dateFilter = cursor ? { $lt: new Date(cursor) } : {};
 
   const following = await Follow.find({ followerId: userId }).select(
     "followingId -_id",
@@ -81,39 +79,58 @@ const getFeedPosts = asyncHandler(async (req, res) => {
 
   const followingIds = following.map((f) => f.followingId);
 
-  const followingPosts = await Post.find({
-    creator: { $in: followingIds },
-    ...query, //...query dynamically injects all filter conditions (like the cursor) into the MongoDB query,
+  //For posts
+  const posts = await Post.find({
+    creator: { $in: [...followingIds, userId] },
+    ...(dateFilter && { createdAt: dateFilter }),
   })
     .sort({ createdAt: -1 })
     .limit(limit)
     .populate("creator", "username avatar");
 
-  let remaining = limit - followingPosts.length;
-  let otherPosts = [];
+  const postFeedItems = posts.map((post) => ({
+    type: "POST",
+    post,
+    createdAt: post.createdAt,
+  }));
 
-  if (remaining > 0) {
-    otherPosts = await Post.find({
-      creator: {
-        $nin: [...followingIds, userId], // exclude self & following
+  /* ---------------- REPOSTS ---------------- */
+  const reposts = await Repost.find({
+    userId: { $in: followingIds },
+    ...(dateFilter && { createdAt: dateFilter }),
+  })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate("userId", "username avatar")
+    .populate({
+      path: "postId",
+      populate: {
+        path: "creator",
+        select: "username avatar",
       },
-      ...query,
-    })
-      .sort({ createdAt: -1 })
-      .limit(remaining)
-      .populate("creator", "username avatar");
-  }
+    });
 
-  const posts = [...followingPosts, ...otherPosts];
+  const repostFeedItems = reposts.map((repost) => ({
+    type: "REPOST",
+    post: repost.postId,
+    repostedBy: repost.userId,
+    text: repost.text,
+    createdAt: repost.createdAt,
+  }));
+
+  /* ---------------- MERGE & SORT ---------------- */
+  let feed = [...postFeedItems, ...repostFeedItems]
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, limit);
 
   res.status(200).json(
     new ApiResponse(
       200,
       {
-        posts,
-        nextCursor: posts.length ? posts[posts.length - 1].createdAt : null, // send the cursor to frontend
+        posts: feed,
+        nextCursor: feed.length ? feed[feed.length - 1].createdAt : null,
       },
-      "Feed posts fetched successfully",
+      "Feed fetched successfully",
     ),
   );
 });
