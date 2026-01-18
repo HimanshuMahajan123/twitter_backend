@@ -9,11 +9,16 @@ export const postService = {
     });
     return response.data;
   },
+ fetchFeedPosts: async (cursor = null, limit = 10) => {
+  const params = { limit };
 
-  getFeedPosts: async (page = 1, limit = 10) => {
-    const response = await api.get('/post/feed', {
-      params: { page, limit },
-    });
-    return response.data;
-  },
+  if (cursor) {
+    params.cursor = cursor; 
+  }
+
+  const response = await api.get("/post/feed", { params });
+  return response.data.data;
+},
+
+
 };

@@ -1,42 +1,68 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { likeService } from '../services/likeService';
-import { followService } from '../services/followService';
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { likeService } from "../services/likeService";
+import { followService } from "../services/followService";
 
-const Post = ({ post, onUpdate }) => {
+const Post = ({ post }) => {
   const { user } = useAuth();
+
+  /* ---------------- FEED NORMALIZATION ---------------- */
+
+  const isRepost = post.type === "REPOST";
+ 
+  // actual post data
+  const actualPost = isRepost ? post.post : post;
+  
+  // creator of original post
+  console.log("Actual post:", actualPost);
+  const creator = actualPost?.post.creator || {};
+  console.log("Post creator:", creator);
+  // reposted by user (if repost)
+  const repostedBy = isRepost ? post.repostedBy : null;
+
+  const content = actualPost?.post.content || {};
+
+  const isOwnPost = user?._id === creator?._id;
+
+  /* ---------------- LIKE STATE ---------------- */
+
   const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(post.likesCount || 0);
+  const [likesCount, setLikesCount] = useState(actualPost?.likesCount || 0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    checkLikeStatus();
-  }, [post._id]);
+    if (actualPost?._id) {
+      checkLikeStatus();
+    }
+    // eslint-disable-next-line
+  }, [actualPost?._id]);
 
   const checkLikeStatus = async () => {
     try {
-      const response = await likeService.isPostLiked(post._id);
-      setIsLiked(response.data?.isLiked || false);
+      const res = await likeService.isPostLiked(actualPost._id);
+      setIsLiked(Boolean(res.data?.isLiked));
     } catch (err) {
-      console.error('Error checking like status:', err);
+      console.error("Like status error:", err);
     }
   };
+
+  /* ---------------- ACTIONS ---------------- */
 
   const handleLike = async () => {
     try {
       setLoading(true);
       if (isLiked) {
-        await likeService.removeLike(post._id);
+        await likeService.removeLike(actualPost._id);
         setIsLiked(false);
-        setLikesCount((prev) => Math.max(0, prev - 1));
+        setLikesCount((c) => Math.max(0, c - 1));
       } else {
-        await likeService.addLike(post._id);
+        await likeService.addLike(actualPost._id);
         setIsLiked(true);
-        setLikesCount((prev) => prev + 1);
+        setLikesCount((c) => c + 1);
       }
     } catch (err) {
-      console.error('Error toggling like:', err);
+      console.error("Like error:", err);
     } finally {
       setLoading(false);
     }
@@ -46,123 +72,131 @@ const Post = ({ post, onUpdate }) => {
     try {
       setLoading(true);
       if (isFollowing) {
-        await followService.removeFollow(post.creator._id);
+        await followService.removeFollow(creator._id);
         setIsFollowing(false);
       } else {
-        await followService.addFollow(post.creator._id);
+        await followService.addFollow(creator._id);
         setIsFollowing(true);
       }
     } catch (err) {
-      console.error('Error toggling follow:', err);
+      console.error("Follow error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now - date;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+  /* ---------------- HELPERS ---------------- */
 
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const diff = Date.now() - new Date(dateString).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m`;
+    if (mins < 1440) return `${Math.floor(mins / 60)}h`;
+    return `${Math.floor(mins / 1440)}d`;
   };
 
-  const creator = post.creator || {};
-  const content = post.content || {};
-  const isOwnPost = user?._id === creator._id;
+  /* ---------------- RENDER ---------------- */
 
   return (
-    <div className="border-b border-gray-200 p-4 hover:bg-gray-50 transition-colors">
+    <div className="border-b border-gray-200 p-4 hover:bg-gray-50">
+
+      {/* REPOST INFO */}
+      {isRepost && repostedBy && (
+        <div className="text-xs text-gray-500 mb-1">
+          🔁 Reposted by @{repostedBy.username}
+        </div>
+      )}
+
       <div className="flex space-x-3">
         <img
-          src={creator.avatar || creator.profilePicture || 'https://via.placeholder.com/48'}
-          alt={creator.username || 'User'}
+          src={creator.avatar || "https://via.placeholder.com/48"}
+          alt="avatar"
           className="w-12 h-12 rounded-full object-cover bg-gray-200"
-          onError={(e) => {
-            e.target.src = 'https://via.placeholder.com/48';
-          }}
+          onError={(e) => (e.target.src = "https://via.placeholder.com/48")}
         />
+
         <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center space-x-2">
-              <span className="font-bold">{creator.name || creator.username || 'Unknown'}</span>
-              <span className="text-gray-500">@{creator.username || 'unknown'}</span>
-              <span className="text-gray-500">·</span>
-              <span className="text-gray-500 text-sm">{formatDate(post.createdAt)}</span>
+          {/* HEADER */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">
+                @{creator.username || "unknown"}
+              </span>
+              <span className="text-gray-500 text-sm">
+                · {formatDate(actualPost.createdAt)}
+              </span>
             </div>
-            {!isOwnPost && (
+
+            {!isOwnPost && creator._id && (
               <button
                 onClick={handleFollow}
                 disabled={loading}
-                className={`px-4 py-1 rounded-full text-sm font-semibold ${
-                  isFollowing
-                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    : 'bg-twitter-blue text-white hover:bg-blue-600'
-                } disabled:opacity-50`}
+                className={`px-4 py-1 rounded-full text-sm font-semibold
+                  ${
+                    isFollowing
+                      ? "bg-gray-200 text-gray-700"
+                      : "bg-[#1DA1F2] text-white"
+                  }`}
               >
-                {isFollowing ? 'Following' : 'Follow'}
+                {isFollowing ? "Following" : "Follow"}
               </button>
             )}
           </div>
 
+          {/* TEXT */}
           {content.text && (
-            <p className="mb-3 text-gray-900 whitespace-pre-wrap">{content.text}</p>
+            <p className="mt-2 whitespace-pre-wrap text-gray-900">
+              {content.text}
+            </p>
           )}
 
+          {/* LINK */}
           {content.linkUrl && (
             <a
               href={content.linkUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-twitter-blue hover:underline mb-3 block"
+              className="block mt-2 text-[#1DA1F2] hover:underline"
             >
               {content.linkUrl}
             </a>
           )}
 
-          {content.imageUrl && content.imageUrl.length > 0 && (
-            <div className={`grid gap-2 mb-3 ${
-              content.imageUrl.length === 1 ? 'grid-cols-1' :
-              content.imageUrl.length === 2 ? 'grid-cols-2' :
-              'grid-cols-2'
-            }`}>
-              {content.imageUrl.map((img, index) => (
+          {/* IMAGES */}
+          {content.imageUrl?.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              {content.imageUrl.map((img, i) => (
                 <img
-                  key={index}
+                  key={i}
                   src={img}
-                  alt={`Post image ${index + 1}`}
-                  className="w-full rounded-lg object-cover"
+                  alt="post"
+                  className="rounded-lg object-cover"
                 />
               ))}
             </div>
           )}
 
+          {/* VIDEO */}
           {content.videoUrl && (
-            <div className="mb-3">
-              <video
-                src={content.videoUrl}
-                controls
-                className="w-full rounded-lg"
-              />
-            </div>
+            <video
+              src={content.videoUrl}
+              controls
+              className="w-full rounded-lg mt-3"
+            />
           )}
 
-          <div className="flex items-center space-x-6 mt-3 text-gray-500">
+          {/* ACTIONS */}
+          <div className="flex items-center gap-6 mt-3 text-gray-500">
             <button
               onClick={handleLike}
               disabled={loading}
-              className={`flex items-center space-x-2 hover:text-twitter-blue transition-colors ${
-                isLiked ? 'text-red-500' : ''
+              className={`flex items-center gap-2 ${
+                isLiked ? "text-red-500" : "hover:text-[#1DA1F2]"
               }`}
             >
-              <span>{isLiked ? '❤️' : '🤍'}</span>
+              <span>{isLiked ? "❤️" : "🤍"}</span>
               <span>{likesCount}</span>
             </button>
           </div>

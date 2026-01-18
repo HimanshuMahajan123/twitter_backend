@@ -8,4 +8,5 @@ import { getFollowing } from "../controllers/user.controllers.js";
 router.get("/dashboard/" , verifyjwt, getUserDashboard);
 router.get("/followers/", verifyjwt, getFollowers);
 router.get("/following/", verifyjwt, getFollowing);
+router.put("/updateprofile/:key", verifyjwt, );
 export default router;
