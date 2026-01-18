@@ -71,7 +71,7 @@ const getFeedPosts = asyncHandler(async (req, res) => {
   const cursor = req.query.cursor;
   const limit = parseInt(req.query.limit) || 10;
 
-  const dateFilter = cursor ? { $lt: new Date(cursor) } : null ; 
+  const dateFilter = cursor ? { $lt: new Date(cursor) } : null;
 
   const following = await Follow.find({ followerId: userId }).select(
     "followingId -_id",
@@ -81,7 +81,7 @@ const getFeedPosts = asyncHandler(async (req, res) => {
 
   //For posts
   const posts = await Post.find({
-    creator: { $in: [...followingIds, userId] },
+    creator: { $in: [...followingIds] },
     ...(dateFilter && { createdAt: dateFilter }),
   })
     .sort({ createdAt: -1 })
