@@ -71,36 +71,33 @@ const getFeedPosts = asyncHandler(async (req, res) => {
   const cursor = req.query.cursor;
   const limit = parseInt(req.query.limit) || 10;
 
-  const dateFilter = cursor ? { $lt: new Date(cursor) } : null ; 
+  const dateFilter = cursor ? { $lt: new Date(cursor) } : {};
 
-  const following = await Follow.find({ followerId: userId }).select(
-    "followingId -_id",
-  );
+  /* ---------------- FOLLOWING ---------------- */
+  const followingDocs = await Follow.find({ followerId: userId })
+    .select("followingId -_id");
 
-  const followingIds = following.map((f) => f.followingId);
+  const followingIds = followingDocs.map(f => f.followingId.toString());
+  const followingSet = new Set(followingIds);
 
-  //For posts
+  /* ---------------- MY REPOSTS ---------------- */
+  const myReposts = await Repost.find({ userId }).select("postId -_id");
+  const myRepostSet = new Set(myReposts.map(r => r.postId.toString()));
+
+  /* ---------------- POSTS (ONE QUERY) ---------------- */
   const posts = await Post.find({
-    creator: { $in: [...followingIds, userId] },
-    ...(dateFilter && { createdAt: dateFilter }),
+    ...dateFilter,
   })
     .sort({ createdAt: -1 })
-    .limit(limit)
+    .limit(limit * 3) // candidate pool
     .populate("creator", "username avatar");
 
-  const postFeedItems = posts.map((post) => ({
-    type: "POST",
-    post,
-    createdAt: post.createdAt,
-  }));
-
-  /* ---------------- REPOSTS ---------------- */
+  /* ---------------- REPOSTS (ONE QUERY) ---------------- */
   const reposts = await Repost.find({
-    userId: { $in: followingIds },
-    ...(dateFilter && { createdAt: dateFilter }),
+    ...dateFilter,
   })
     .sort({ createdAt: -1 })
-    .limit(limit)
+    .limit(limit * 2)
     .populate("userId", "username avatar")
     .populate({
       path: "postId",
@@ -110,30 +107,53 @@ const getFeedPosts = asyncHandler(async (req, res) => {
       },
     });
 
-  const repostFeedItems = reposts.map((repost) => ({
+  /* ---------------- NORMALIZE ---------------- */
+  const postItems = posts.map(post => ({
+    type: "POST",
+    post,
+    createdAt: post.createdAt,
+    isRepostedByMe: myRepostSet.has(post._id.toString()),
+    isFollowing: followingSet.has(post.creator._id.toString()),
+    priority: followingSet.has(post.creator._id.toString()) ? 1 : 3,
+  }));
+
+  const repostItems = reposts.map(r => ({
     type: "REPOST",
-    post: repost.postId,
-    repostedBy: repost.userId,
-    text: repost.text,
-    createdAt: repost.createdAt,
+    post: r.postId,
+    repostedBy: r.userId,
+    createdAt: r.createdAt,
+    isRepostedByMe: r.userId._id.toString() === userId.toString(),
+    isFollowing: followingSet.has(r.userId._id.toString()),
+    priority: 2,
   }));
 
   /* ---------------- MERGE & SORT ---------------- */
-  let feed = [...postFeedItems, ...repostFeedItems]
-    .sort((a, b) => b.createdAt - a.createdAt)
+  const feed = [...postItems, ...repostItems]
+    .sort((a, b) => {
+      if (a.priority !== b.priority) {
+        return a.priority - b.priority;
+      }
+      return b.createdAt - a.createdAt;
+    })
     .slice(0, limit);
 
+  /* ---------------- RESPONSE ---------------- */
   res.status(200).json(
     new ApiResponse(
       200,
       {
         posts: feed,
-        nextCursor: feed.length ? feed[feed.length - 1].createdAt : null,
+        nextCursor: feed.length
+          ? feed[feed.length - 1].createdAt
+          : null,
       },
-      "Feed fetched successfully",
-    ),
+      "Feed fetched successfully"
+    )
   );
 });
+
+
+
 
 const trendingPosts = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
@@ -183,7 +203,6 @@ const trendingPosts = asyncHandler(async (req, res) => {
 const repostPost = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const { postId } = req.params;
-  const { text } = req.body;
 
   if (!postId) {
     throw new ApiError(400, "Post ID is required");
@@ -205,7 +224,6 @@ const repostPost = asyncHandler(async (req, res) => {
   const repost = await Repost.create({
     userId,
     postId,
-    text: text?.trim() || undefined,
   });
 
   const populatedRepost = await Repost.findById(repost._id)

@@ -5,7 +5,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/api-response.js";
 import { User } from "../models/user.models.js";
 import { Follow } from "../models/follow.models.js";
-
+import {Like} from "../models/likes.model.js";
+import { Repost } from "../models/repost.models.js";
 const getUserDashboard = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
@@ -36,11 +37,25 @@ const getUserDashboard = asyncHandler(async (req, res) => {
   const followersCount = followers.length;
   const followingCount = following.length;
 
-  /* ---------------- POSTS ---------------- */
-  const posts = await Post.find({ creator: userId })
-    .populate("creator", "username name avatar")
-    .sort({ createdAt: -1 })
-    .limit(10);
+ /* ---------------- USER POSTS ---------------- */
+const posts = await Post.find({ creator: userId })
+  .populate("creator", "username name avatar")
+  .sort({ createdAt: -1 })
+  .limit(10)
+  .lean();
+
+/* ---------------- ADD REPOST META ---------------- */
+const repostedPostIds = await Repost.find({ userId })
+  .select("postId -_id");
+
+const repostSet = new Set(
+  repostedPostIds.map(r => r.postId.toString())
+);
+
+const enrichedPosts = posts.map(p => ({
+  ...p,
+  isRepostedByMe: repostSet.has(p._id.toString()),
+}));
 
   const postsCount = await Post.countDocuments({ creator: userId });
 
@@ -58,7 +73,7 @@ const getUserDashboard = asyncHandler(async (req, res) => {
           followingCount,
           postsCount,
         },
-        posts,
+        posts: enrichedPosts,
       }
     )
   );
@@ -110,4 +125,93 @@ const updateprofile = asyncHandler(async (req, res) => {
 
   return res.status(200).json(new ApiResponse(200, "Profile updated successfully", { user: updatedUser }));
 });
-export { getUserDashboard , getFollowers, getFollowing , updateprofile };
+
+const toggleLike = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { postId } = req.params;
+
+  const post = await Post.findById(postId);
+  if (!post) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, "Post not found"));
+  }
+
+  const existingLike = await Like.findOne({
+    userId,
+    postId,
+  });
+
+  // UNLIKE
+  if (existingLike) {
+    await Like.deleteOne({ _id: existingLike._id });
+
+    await Post.updateOne(
+      { _id: postId },
+      { $inc: { likesCount: -1 } }
+    );
+
+    return res.status(200).json(
+      new ApiResponse(200, "Post unliked", {
+        liked: false,
+      })
+    );
+  }
+
+  // LIKE
+  await Like.create({
+    userId,
+    postId,
+  });
+
+  await Post.updateOne(
+    { _id: postId },
+    { $inc: { likesCount: 1 } }
+  );
+
+  return res.status(200).json(
+    new ApiResponse(200, "Post liked", {
+      liked: true,
+    })
+  );
+});
+
+
+const toggleFollow = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { userId: targetUserId } = req.params;
+  console.log(userId, targetUserId);
+  if (userId.toString() === targetUserId) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, "You cannot follow yourself"));
+  }
+
+  const existingFollow = await Follow.findOne({
+    followerId: userId,
+    followingId: targetUserId,
+  });
+
+  if (existingFollow) {
+    await Follow.deleteOne({ _id: existingFollow._id });
+
+    return res.status(200).json(
+      new ApiResponse(200, "Unfollowed successfully", {
+        following: false,
+      })
+    );
+  }
+
+  await Follow.create({
+    followerId: userId,
+    followingId: targetUserId,
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, "Followed successfully", {
+      following: true,
+    })
+  );
+});
+
+export { getUserDashboard , getFollowers, getFollowing , updateprofile, toggleLike, toggleFollow };
