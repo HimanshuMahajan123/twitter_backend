@@ -136,7 +136,7 @@ const getFeedPosts = asyncHandler(async (req, res) => {
 });
 
 const trendingPosts = asyncHandler(async (req, res) => {
-  const limit = parseInt(req.query.limit) || 10;
+  const limit = 5;
   const cursor = req.query.cursor ? JSON.parse(req.query.cursor) : null;
 
   // Build cursor query
