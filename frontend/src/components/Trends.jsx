@@ -36,7 +36,7 @@ const Trends = () => {
     const fetchFollowing = async () => {
       if (!user?.username) return;
       try {
-        const res = await followService.getFollowing(user._id);
+        const res = await followService.getFollowing();
         const following = res.data?.following || [];
         console.log("following", following);
         const ids = following

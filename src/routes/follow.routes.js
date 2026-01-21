@@ -18,6 +18,6 @@ router.delete(
   removeFollow,
 );
 router.get("/getFollowers/:userId", verifyjwt, validateObjectId, getFollowers);
-router.get("/getFollowing", verifyjwt, validateObjectId, getFollowing);
+router.get("/getFollowing", verifyjwt, getFollowing);
 
 export default router;

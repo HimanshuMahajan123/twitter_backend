@@ -13,7 +13,7 @@ export const followService = {
     return response.data;
   },
 
-  getFollowing: async (userId) => {
+  getFollowing: async () => {
     const response = await api.get(`/follow/getFollowing`);
     return response.data;
   },

@@ -77,16 +77,12 @@ export const getFollowers = asyncHandler(async (req, res) => {
   );
 });
 export const getFollowing = asyncHandler(async (req, res) => {
-  const { userId } = req.user._id;
+  const userId = req.user._id;
 
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    throw new ApiError(400, "Invalid userId");
-  }
 
   const following = await Follow.find({ followerId: userId })
     .populate("followingId", "username name avatar")
     .sort({ createdAt: -1 });
-
   res.status(200).json(
     new ApiResponse(
       200,
