@@ -77,7 +77,7 @@ export const getFollowers = asyncHandler(async (req, res) => {
   );
 });
 export const getFollowing = asyncHandler(async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.user._id;
 
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new ApiError(400, "Invalid userId");

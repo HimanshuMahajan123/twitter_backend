@@ -178,6 +178,7 @@ const trendingPosts = asyncHandler(async (req, res) => {
     .limit(limit)
     .populate("creator", "username avatar");
 
+
   // Prepare nextCursor
   const nextCursor =
     posts.length > 0

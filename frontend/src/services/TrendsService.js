@@ -1,5 +1,8 @@
-import api from './api.js';
+import api from "./api.js";
 
 export const trendsService = {
-  getTrends: () => api.get('/trending' ),
+  getTrends: async () => {
+    const response = await api.get("/post/trending");
+    return response.data?.data || {};
+  },
 };

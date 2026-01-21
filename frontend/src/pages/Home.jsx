@@ -4,6 +4,7 @@ import { postService } from "../services/postService";
 import Post from "../components/Post";
 import PostCreate from "../components/PostCreate";
 import Sidebar from "../components/Sidebar";
+import Trends from "../components/Trends";
 
 const Home = () => {
   const { user, logout } = useAuth();
@@ -96,7 +97,7 @@ const Home = () => {
           <div className="col-span-6 border-x border-gray-200 bg-white">
 
             {/* HEADER */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-0">
               <h1 className="text-xl font-bold">Home</h1>
             </div>
 
@@ -144,12 +145,7 @@ const Home = () => {
 
           {/* RIGHT SIDEBAR */}
           <div className="col-span-3">
-            <div className="sticky top-4 bg-gray-100 rounded-lg p-4">
-              <h2 className="text-lg font-bold mb-2">Trends</h2>
-              <p className="text-sm text-gray-600">
-                Coming soon…
-              </p>
-            </div>
+            <Trends />
           </div>
 
         </div>

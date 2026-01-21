@@ -14,7 +14,7 @@ export const followService = {
   },
 
   getFollowing: async (userId) => {
-    const response = await api.get(`/follow/getFollowing/${userId}`);
+    const response = await api.get(`/follow/getFollowing`);
     return response.data;
   },
 };
